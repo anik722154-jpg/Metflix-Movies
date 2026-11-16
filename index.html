@@ -163,7 +163,7 @@
             color: var(--primary);
         }
 
-        /* Multi-Movie Dynamic Hero Banner */
+        /* Multi-Movie Hero Banner */
         .hero-banner {
             position: relative;
             height: 420px;
@@ -407,7 +407,7 @@
             text-overflow: ellipsis;
         }
 
-        /* Movable / Draggable Video Player Modal */
+        /* ================= RESPONSIVE MOVIE PLAYER SYSTEM ================= */
         .player-modal {
             position: fixed;
             inset: 0;
@@ -422,8 +422,9 @@
             display: flex;
         }
 
+        /* PC / Tablet / Phone Adaptive Container */
         .draggable-window {
-            width: 100%;
+            width: 92%;
             max-width: 1050px;
             background: #111;
             border-radius: 10px;
@@ -452,6 +453,10 @@
             font-size: 15px;
             font-weight: 700;
             color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80%;
         }
 
         .close-player {
@@ -486,6 +491,35 @@
             height: 75px;
             z-index: 10;
             background: transparent;
+        }
+
+        /* Responsive Breakpoints for Mobile & Tablet */
+        @media (max-width: 768px) {
+            .draggable-window {
+                width: 100% !important;
+                height: 100% !important;
+                max-width: 100% !important;
+                border-radius: 0 !important;
+                border: none !important;
+                top: 0 !important;
+                left: 0 !important;
+                position: fixed !important;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .player-header {
+                cursor: default !important;
+                height: 55px;
+            }
+
+            .video-container {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 16 / 9;
+                max-height: 80vh;
+            }
         }
 
         /* Floating Add Button */
@@ -632,7 +666,7 @@
         <i class="fas fa-plus"></i>
     </div>
 
-    <!-- Movable / Draggable Video Player Modal -->
+    <!-- Adaptive Video Player Modal -->
     <div class="player-modal" id="playerModal">
         <div class="draggable-window" id="draggableWindow">
             <div class="player-header" id="playerHeader">
@@ -671,14 +705,14 @@
                     id: "mov1", 
                     title: "Spider-Man: Homecoming (2017)", 
                     link: "https://drive.google.com/file/d/123QLWYo0IEei_2ldGjBmoysgdVpmccAj/view?usp=drivesdk", 
-                    thumb: "https://tse1.mm.bing.net/th/id/OIP.ZrN10KtyfKSBzLA5Xzwr-AHaFS?r=0&rs=1&pid=ImgDetMain&o=7&rm=3",
+                    thumb: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=600&q=80",
                     desc: "Thrilled by his experience with the Avengers, young Peter Parker returns home to live with his Aunt May under the watchful eye of mentor Tony Stark."
                 },
                 { 
                     id: "mov2", 
                     title: "Munna Bhai M.B.B.S. (2003)", 
                     link: "https://drive.google.com/file/d/1K3tMALjp3EJaOZpT37_53rWsCcucfUEU/view?usp=drivesdk", 
-                    thumb: "https://boxofficeworldwide.com/wp-content/uploads/2024/12/MixCollage-19-Dec-2024-11-30-AM-6004.jpg",
+                    thumb: "https://images.unsplash.com/photo-1585951237318-9ea5e175b891?w=600&q=80",
                     desc: "A benevolent goon goes to medical college to fulfill his father's dream of seeing him become a doctor, bringing healing through compassion and humor."
                 }
             ],
@@ -687,7 +721,7 @@
                     id: "bol1", 
                     title: "Munna Bhai M.B.B.S. (2003)", 
                     link: "https://drive.google.com/file/d/1K3tMALjp3EJaOZpT37_53rWsCcucfUEU/view?usp=drivesdk", 
-                    thumb: "https://boxofficeworldwide.com/wp-content/uploads/2024/12/MixCollage-19-Dec-2024-11-30-AM-6004.jpg",
+                    thumb: "https://images.unsplash.com/photo-1585951237318-9ea5e175b891?w=600&q=80",
                     desc: "A benevolent goon goes to medical college to fulfill his father's dream of seeing him become a doctor, bringing healing through compassion and humor."
                 }
             ]
@@ -824,10 +858,12 @@
             iframe.src = finalStreamUrl;
             modal.classList.add('active');
 
-            // Center window on open
+            // Center window on PC open
             const win = document.getElementById('draggableWindow');
-            win.style.top = `${(window.innerHeight - win.offsetHeight) / 2}px`;
-            win.style.left = `${(window.innerWidth - win.offsetWidth) / 2}px`;
+            if (window.innerWidth > 768) {
+                win.style.top = `${(window.innerHeight - win.offsetHeight) / 2}px`;
+                win.style.left = `${(window.innerWidth - win.offsetWidth) / 2}px`;
+            }
         }
 
         function closePlayer() {
@@ -837,12 +873,13 @@
             modal.classList.remove('active');
         }
 
-        // Draggable / Movable Window Logic
+        // Draggable / Movable Window Logic (PC / Tablet)
         const draggableWindow = document.getElementById('draggableWindow');
         const playerHeader = document.getElementById('playerHeader');
         let isDragging = false, startX, startY, initialX, initialY;
 
         playerHeader.addEventListener('mousedown', (e) => {
+            if (window.innerWidth <= 768) return; // Disable drag on mobile phones
             isDragging = true;
             startX = e.clientX;
             startY = e.clientY;
