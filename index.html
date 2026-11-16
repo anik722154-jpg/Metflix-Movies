@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metflix - Streaming Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #e50914;
+            --primary-hover: #b20710;
+            --bg-body: #141414;
+            --bg-card: #1f1f1f;
+            --bg-surface: #2b2b2b;
+            --text-main: #ffffff;
+            --text-sub: #b3b3b3;
+            --border: #333333;
+            --nav-height: 70px;
+            --danger: #e74c3c;
+        }
+
+        [data-theme="light"] {
+            --bg-body: #f4f5f8;
+            --bg-card: #ffffff;
+            --bg-surface: #eaecef;
+            --text-main: #111318;
+            --text-sub: #606575;
+            --border: #dcdfe6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Cinematic Loading Screen */
+        .loader-overlay {
+            position: fixed;
+            inset: 0;
+            background: #09090b;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        .loader-overlay.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-logo {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--primary);
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            animation: pulseLogo 1.5s infinite ease-in-out;
+        }
+
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(229, 9, 20, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spinLoad 0.8s linear infinite;
+        }
+
+        @keyframes spinLoad {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulseLogo {
+            0%, 100% { opacity: 0.7; transform: scale(0.98); }
+            50% { opacity: 1; transform: scale(1.02); }
+        }
+
+        /* Navbar */
+        .navbar {
+            height: var(--nav-height);
+            background: rgba(20, 20, 20, 0.92);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 4%;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 900;
+            font-size: 24px;
+            color: var(--primary);
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 6px 12px;
+            width: 100%;
+            max-width: 280px;
+            gap: 8px;
+        }
+
+        .search-box input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            width: 100%;
+            font-size: 14px;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .icon-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Multi-Movie Dynamic Hero Banner */
+        .hero-banner {
+            position: relative;
+            height: 420px;
+            background-size: cover;
+            background-position: center top;
+            display: flex;
+            align-items: flex-end;
+            padding: 40px 4%;
+            transition: background-image 0.8s ease-in-out;
+        }
+
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(20,20,20,0.2) 20%, var(--bg-body) 100%);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 650px;
+        }
+
+        .badge-tag {
+            background: var(--primary);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 2px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .hero-title {
+            font-size: 38px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            line-height: 1.1;
+        }
+
+        .hero-desc {
+            color: var(--text-sub);
+            font-size: 15px;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 18px;
+        }
+
+        .hero-play-btn {
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: opacity 0.2s;
+        }
+
+        .hero-play-btn:hover {
+            opacity: 0.85;
+        }
+
+        /* Category Tabs */
+        .season-tabs {
+            display: flex;
+            gap: 12px;
+            padding: 20px 4%;
+            overflow-x: auto;
+            border-bottom: 1px solid var(--border);
+            scrollbar-width: none;
+        }
+
+        .season-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-btn {
+            background: var(--bg-card);
+            color: var(--text-sub);
+            border: 1px solid var(--border);
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active, .tab-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* Movie Grid Layout */
+        .container {
+            padding: 30px 4%;
+            flex: 1;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .movie-card {
+            background: var(--bg-card);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .movie-card:hover {
+            transform: scale(1.04);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            z-index: 10;
+        }
+
+        .movie-thumb-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+        }
+
+        .movie-thumb-wrapper img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .play-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .movie-card:hover .play-overlay {
+            opacity: 1;
+        }
+
+        .play-btn-circle {
+            width: 44px;
+            height: 44px;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        /* Delete Button */
+        .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.75);
+            color: var(--text-sub);
+            border: 1px solid var(--border);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 5;
+            transition: all 0.2s ease;
+            font-size: 12px;
+        }
+
+        .delete-btn:hover {
+            background: var(--danger);
+            color: #fff;
+            border-color: var(--danger);
+            transform: scale(1.1);
+        }
+
+        .movie-info {
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .movie-tag {
+            font-size: 11px;
+            color: #46d369;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .movie-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Movable / Draggable Video Player Modal */
+        .player-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.92);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .player-modal.active {
+            display: flex;
+        }
+
+        .draggable-window {
+            width: 100%;
+            max-width: 1050px;
+            background: #111;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            border: 1px solid #333;
+            position: absolute;
+        }
+
+        .player-header {
+            height: 50px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+            cursor: grab;
+        }
+
+        .player-header:active {
+            cursor: grabbing;
+        }
+
+        .player-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .close-player {
+            font-size: 20px;
+            color: #aaa;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .close-player:hover {
+            color: #fff;
+        }
+
+        .video-container {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            position: relative;
+        }
+
+        .video-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .popout-blocker {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 75px;
+            height: 75px;
+            z-index: 10;
+            background: transparent;
+        }
+
+        /* Floating Add Button */
+        .fab-upload {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--primary);
+            color: #fff;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 6px 20px rgba(229, 9, 20, 0.5);
+            cursor: pointer;
+            z-index: 90;
+            transition: transform 0.2s;
+        }
+
+        .fab-upload:hover {
+            transform: scale(1.08);
+        }
+
+        /* Upload Modal Sheet */
+        .modal-sheet {
+            position: fixed;
+            bottom: -100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            background: var(--bg-card);
+            border-radius: 16px 16px 0 0;
+            padding: 26px;
+            z-index: 500;
+            border: 1px solid var(--border);
+            transition: bottom 0.3s ease;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
+        }
+
+        .modal-sheet.active {
+            bottom: 0;
+        }
+
+        .modal-sheet h3 {
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-surface);
+            color: var(--text-main);
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-hover);
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            z-index: 400;
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <!-- Cinematic Loader Overlay -->
+    <div class="loader-overlay" id="loaderOverlay">
+        <div class="loader-logo">METFLIX</div>
+        <div class="loader-spinner"></div>
+    </div>
+
+    <nav class="navbar">
+        <a href="#" class="brand">
+            <i class="fas fa-play-circle"></i> METFLIX
+        </a>
+
+        <div class="search-box">
+            <i class="fas fa-search" style="color: var(--text-sub);"></i>
+            <input type="text" id="searchInput" placeholder="Search movies..." oninput="filterMovies()">
+        </div>
+
+        <div class="nav-actions">
+            <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle Theme">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Multi-Movie Hero Banner -->
+    <header class="hero-banner" id="heroBanner">
+        <div class="hero-content">
+            <span class="badge-tag">Featured Cinema</span>
+            <h1 class="hero-title" id="heroTitle">Spider-Man: Homecoming (2017)</h1>
+            <p class="hero-desc" id="heroDesc">Thrilled by his experience with the Avengers, young Peter Parker returns home to live with his Aunt May under the watchful eye of mentor Tony Stark.</p>
+            <button class="hero-play-btn" id="heroPlayBtn" onclick="playCurrentHeroMovie()">
+                <i class="fas fa-play"></i> Play Movie
+            </button>
+        </div>
+    </header>
+
+    <div class="season-tabs" id="categoryTabs">
+        <button class="tab-btn active" onclick="switchCategory(event, 'movies')">All Movies</button>
+        <button class="tab-btn" onclick="switchCategory(event, 'bollywood')">Bollywood</button>
+    </div>
+
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title" id="currentCategoryTitle">All Movies</h2>
+            <span style="color: var(--text-sub); font-size: 14px;" id="movieCount">0 Titles</span>
+        </div>
+
+        <div class="movies-grid" id="moviesGrid"></div>
+    </div>
+
+    <div class="fab-upload" onclick="toggleUploadModal(true)" title="Add Movie Link">
+        <i class="fas fa-plus"></i>
+    </div>
+
+    <!-- Movable / Draggable Video Player Modal -->
+    <div class="player-modal" id="playerModal">
+        <div class="draggable-window" id="draggableWindow">
+            <div class="player-header" id="playerHeader">
+                <span class="player-title" id="playerTitle">Playing Movie</span>
+                <i class="fas fa-times close-player" onclick="closePlayer()"></i>
+            </div>
+            <div class="video-container">
+                <div class="popout-blocker"></div>
+                <iframe id="movieIframe" allow="autoplay; fullscreen" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="toggleUploadModal(false)"></div>
+    <div class="modal-sheet" id="uploadSheet">
+        <h3>Add New Movie Link</h3>
+        <input type="text" id="newCategoryKey" class="form-control" placeholder="Category (movies or bollywood)">
+        <input type="text" id="newMovieTitle" class="form-control" placeholder="Movie Title">
+        <input type="text" id="newMovieUrl" class="form-control" placeholder="Google Drive Share Link">
+        <button class="btn-submit" onclick="addCustomMovie()">Add to Metflix</button>
+    </div>
+
+    <script>
+        // Cinematic Loader Fade Out on Window Load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loaderOverlay').classList.add('fade-out');
+            }, 500);
+        });
+
+        const STORAGE_KEY = 'metflix_catalog_v5';
+
+        const defaultDatabase = {
+            movies: [
+                { 
+                    id: "mov1", 
+                    title: "Spider-Man: Homecoming (2017)", 
+                    link: "https://drive.google.com/file/d/123QLWYo0IEei_2ldGjBmoysgdVpmccAj/view?usp=drivesdk", 
+                    thumb: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=600&q=80",
+                    desc: "Thrilled by his experience with the Avengers, young Peter Parker returns home to live with his Aunt May under the watchful eye of mentor Tony Stark."
+                },
+                { 
+                    id: "mov2", 
+                    title: "Munna Bhai M.B.B.S. (2003)", 
+                    link: "https://drive.google.com/file/d/1K3tMALjp3EJaOZpT37_53rWsCcucfUEU/view?usp=drivesdk", 
+                    thumb: "https://images.unsplash.com/photo-1585951237318-9ea5e175b891?w=600&q=80",
+                    desc: "A benevolent goon goes to medical college to fulfill his father's dream of seeing him become a doctor, bringing healing through compassion and humor."
+                }
+            ],
+            bollywood: [
+                { 
+                    id: "bol1", 
+                    title: "Munna Bhai M.B.B.S. (2003)", 
+                    link: "https://drive.google.com/file/d/1K3tMALjp3EJaOZpT37_53rWsCcucfUEU/view?usp=drivesdk", 
+                    thumb: "https://images.unsplash.com/photo-1585951237318-9ea5e175b891?w=600&q=80",
+                    desc: "A benevolent goon goes to medical college to fulfill his father's dream of seeing him become a doctor, bringing healing through compassion and humor."
+                }
+            ]
+        };
+
+        function loadMovies() {
+            try {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                return savedData ? JSON.parse(savedData) : defaultDatabase;
+            } catch (e) {
+                return defaultDatabase;
+            }
+        }
+
+        function saveMovies() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(movieDatabase));
+        }
+
+        const movieDatabase = loadMovies();
+        let currentCategory = 'movies';
+
+        // Dynamic Hero Slideshow for All Movies
+        let heroIndex = 0;
+        let currentHeroMovie = null;
+
+        function updateHeroBanner() {
+            const allMovies = movieDatabase['movies'] || [];
+            if (allMovies.length === 0) return;
+
+            currentHeroMovie = allMovies[heroIndex % allMovies.length];
+            const banner = document.getElementById('heroBanner');
+            banner.style.backgroundImage = `url('${currentHeroMovie.thumb}')`;
+            document.getElementById('heroTitle').innerText = currentHeroMovie.title;
+            document.getElementById('heroDesc').innerText = currentHeroMovie.desc || "Stream your favorite cinema instantly in HD quality.";
+
+            heroIndex++;
+        }
+
+        setInterval(updateHeroBanner, 5000);
+        updateHeroBanner();
+
+        function playCurrentHeroMovie() {
+            if (currentHeroMovie) {
+                openPlayer(currentHeroMovie.title, currentHeroMovie.link);
+            }
+        }
+
+        function renderMovies(categoryKey, searchQuery = '') {
+            const grid = document.getElementById('moviesGrid');
+            const movieCount = document.getElementById('movieCount');
+            grid.innerHTML = '';
+
+            let movies = movieDatabase[categoryKey] || [];
+
+            if (searchQuery.trim() !== '') {
+                movies = movies.filter(m => m.title.toLowerCase().includes(searchQuery.toLowerCase()));
+            }
+
+            movieCount.innerText = `${movies.length} Title${movies.length === 1 ? '' : 's'}`;
+
+            if (movies.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-sub); padding: 40px 0;">No movies found in this section.</div>`;
+                return;
+            }
+
+            movies.forEach(movie => {
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                card.onclick = () => openPlayer(movie.title, movie.link);
+                card.innerHTML = `
+                    <div class="movie-thumb-wrapper">
+                        <img src="${movie.thumb}" alt="${movie.title}">
+                        <div class="play-overlay">
+                            <div class="play-btn-circle"><i class="fas fa-play"></i></div>
+                        </div>
+                        <button class="delete-btn" title="Delete Movie" onclick="deleteMovie(event, '${categoryKey}', '${movie.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="movie-info">
+                        <span class="movie-tag">HD Stream</span>
+                        <div class="movie-title">${movie.title}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function deleteMovie(event, categoryKey, movieId) {
+            event.stopPropagation();
+            if (!confirm('Are you sure you want to delete this movie?')) return;
+
+            if (movieDatabase[categoryKey]) {
+                movieDatabase[categoryKey] = movieDatabase[categoryKey].filter(m => m.id !== movieId);
+            }
+            saveMovies();
+            renderMovies(categoryKey, document.getElementById('searchInput').value);
+            updateHeroBanner();
+        }
+
+        function switchCategory(event, categoryKey) {
+            currentCategory = categoryKey;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
+
+            const titleMap = {
+                movies: "All Movies",
+                bollywood: "Bollywood Movies"
+            };
+            document.getElementById('currentCategoryTitle').innerText = titleMap[categoryKey] || `${categoryKey.toUpperCase()} Catalog`;
+            renderMovies(categoryKey);
+        }
+
+        function filterMovies() {
+            const query = document.getElementById('searchInput').value;
+            renderMovies(currentCategory, query);
+        }
+
+        function openPlayer(title, rawUrl) {
+            const modal = document.getElementById('playerModal');
+            const iframe = document.getElementById('movieIframe');
+            document.getElementById('playerTitle').innerText = title;
+
+            let finalStreamUrl = rawUrl;
+            if (rawUrl.includes('drive.google.com')) {
+                const match = rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) {
+                    finalStreamUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
+                }
+            }
+
+            iframe.src = finalStreamUrl;
+            modal.classList.add('active');
+
+            // Center window on open
+            const win = document.getElementById('draggableWindow');
+            win.style.top = `${(window.innerHeight - win.offsetHeight) / 2}px`;
+            win.style.left = `${(window.innerWidth - win.offsetWidth) / 2}px`;
+        }
+
+        function closePlayer() {
+            const modal = document.getElementById('playerModal');
+            const iframe = document.getElementById('movieIframe');
+            iframe.src = '';
+            modal.classList.remove('active');
+        }
+
+        // Draggable / Movable Window Logic
+        const draggableWindow = document.getElementById('draggableWindow');
+        const playerHeader = document.getElementById('playerHeader');
+        let isDragging = false, startX, startY, initialX, initialY;
+
+        playerHeader.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            initialX = draggableWindow.offsetLeft;
+            initialY = draggableWindow.offsetTop;
+            draggableWindow.style.position = 'absolute';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            draggableWindow.style.left = `${initialX + dx}px`;
+            draggableWindow.style.top = `${initialY + dy}px`;
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeBtn = document.getElementById('themeToggle');
+            if (html.getAttribute('data-theme') === 'dark') {
+                html.setAttribute('data-theme', 'light');
+                themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                themeBtn.innerHTML = '<i class="fas fa-moon"></i>';
+            }
+        }
+
+        function toggleUploadModal(show) {
+            document.getElementById('uploadSheet').classList.toggle('active', show);
+            document.getElementById('overlay').classList.toggle('active', show);
+        }
+
+        function addCustomMovie() {
+            const categoryKey = document.getElementById('newCategoryKey').value.trim().toLowerCase() || 'movies';
+            const title = document.getElementById('newMovieTitle').value.trim();
+            const url = document.getElementById('newMovieUrl').value.trim();
+
+            if (!title || !url) {
+                alert('Please provide both a movie title and a video link.');
+                return;
+            }
+
+            if (!movieDatabase[categoryKey]) {
+                movieDatabase[categoryKey] = [];
+            }
+
+            const newMovie = {
+                id: `${categoryKey}-mov-${Date.now()}`,
+                title: title,
+                link: url,
+                thumb: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80',
+                desc: 'Custom added movie title.'
+            };
+
+            movieDatabase[categoryKey].push(newMovie);
+            if (categoryKey !== 'movies' && movieDatabase['movies']) {
+                movieDatabase['movies'].push(newMovie);
+            }
+            saveMovies();
+
+            toggleUploadModal(false);
+            document.getElementById('newCategoryKey').value = '';
+            document.getElementById('newMovieTitle').value = '';
+            document.getElementById('newMovieUrl').value = '';
+
+            renderMovies(currentCategory);
+            updateHeroBanner();
+        }
+
+        renderMovies('movies');
+    </script>
+</body>
+</html>
